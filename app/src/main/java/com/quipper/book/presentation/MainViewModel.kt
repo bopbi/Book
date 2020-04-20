@@ -1,4 +1,4 @@
-package com.quipper.book
+package com.quipper.book.presentation
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
