@@ -10,17 +10,23 @@ import com.quipper.book.R
 import com.quipper.book.model.Movie
 import kotlinx.android.synthetic.main.item_adapter.view.*
 
-class MainAdapter(private val data: List<Movie>): RecyclerView.Adapter<MainAdapter.MovieViewHolder>() {
+class MainAdapter(private val movies: MutableList<Movie> = mutableListOf()): RecyclerView.Adapter<MainAdapter.MovieViewHolder>() {
+
+    fun setItems(newData: List<Movie>) {
+        movies.clear()
+        movies.addAll(newData)
+        notifyDataSetChanged()
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MovieViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_adapter, parent, false)
         return MovieViewHolder(view)
     }
 
-    override fun getItemCount(): Int = data.size
+    override fun getItemCount(): Int = movies.size
 
     override fun onBindViewHolder(holder: MovieViewHolder, position: Int) {
-        holder.bind(data[position])
+        holder.bind(movies[position])
     }
 
     inner class MovieViewHolder(itemView: View): RecyclerView.ViewHolder(itemView){
