@@ -1,4 +1,4 @@
-package com.quipper.book.presentation
+package com.quipper.book.main
 
 import androidx.lifecycle.ViewModel
 import com.quipper.book.domain.GetPopularUseCase
@@ -14,7 +14,9 @@ class MainViewModel @Inject constructor(private val useCase: GetPopularUseCase) 
 
     private val publishSubject: PublishSubject<MainState> = PublishSubject.create()
     private val compositeDisposable = CompositeDisposable()
-    private val state = publishSubject.replay(1).autoConnect(0)
+    private val state = publishSubject
+        .replay(1)
+        .autoConnect(0)
 
     fun initializeData() {
         val disposable = useCase.execute()

@@ -2,7 +2,7 @@ package com.quipper.book.di
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.quipper.book.presentation.MainViewModel
+import com.quipper.book.main.MainViewModel
 import dagger.Binds
 import dagger.MapKey
 import dagger.Module

@@ -1,4 +1,4 @@
-package com.quipper.book.presentation
+package com.quipper.book.main
 
 import android.os.Bundle
 import android.util.Log
