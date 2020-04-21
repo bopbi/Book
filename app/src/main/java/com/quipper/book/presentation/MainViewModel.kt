@@ -51,6 +51,11 @@ class MainViewModel @Inject constructor(private val useCase: GetPopularUseCase) 
     fun getState(): Observable<MainState> {
         return state
     }
+
+    override fun onCleared() {
+        super.onCleared()
+        compositeDisposable.dispose()
+    }
 }
 
 data class MainState(
