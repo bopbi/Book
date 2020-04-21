@@ -7,7 +7,7 @@ import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
 
 class GetPopularUseCaseImpl(private val popularRepository: PopularRepository) : GetPopularUseCase {
-    override fun execute(): Single<Popular> {
-        return popularRepository.getPopular()
+    override fun execute(apiKey: String): Single<Popular> {
+        return popularRepository.getPopular(apiKey)
     }
 }

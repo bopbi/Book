@@ -4,5 +4,5 @@ import com.quipper.book.model.Popular
 import io.reactivex.Single
 
 interface GetPopularUseCase {
-    fun execute(): Single<Popular>
+    fun execute(apiKey: String): Single<Popular>
 }

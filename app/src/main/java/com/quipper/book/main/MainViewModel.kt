@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import com.quipper.book.domain.GetPopularUseCase
 import com.quipper.book.model.Movie
 import io.reactivex.Observable
+import io.reactivex.ObservableTransformer
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
@@ -12,51 +13,104 @@ import javax.inject.Inject
 
 class MainViewModel @Inject constructor(private val useCase: GetPopularUseCase) : ViewModel() {
 
-    private val publishSubject: PublishSubject<MainState> = PublishSubject.create()
+    private val publishSubject: PublishSubject<MainIntent> = PublishSubject.create()
     private val compositeDisposable = CompositeDisposable()
-    private val state = publishSubject
-        .replay(1)
-        .autoConnect(0)
 
-    fun initializeData() {
-        val disposable = useCase.execute()
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .toObservable()
-            .map {
-                MainState(
-                    isLoading = false,
-                    isError = false,
-                    movies = it.results
-                )
-            }
-            .startWith(
-                MainState(
-                    isLoading = true,
-                    isError = false,
-                    movies = emptyList()
+    // filter intent
+    private val intentFilter = ObservableTransformer<MainIntent, MainIntent> { intentObservable ->
+        intentObservable.publish { intents ->
+            Observable.merge(
+                listOf(
+                    intents.ofType(MainIntent.LoadPopularMovieIntent::class.java).take(1)
                 )
             )
-            .subscribe({
-                publishSubject.onNext(it)
-            }, {
-                val mainState = MainState(
-                    isLoading = false,
-                    isError = true,
-                    movies = emptyList()
-                )
-                publishSubject.onNext(mainState)
-            })
-        compositeDisposable.add(disposable)
+                .cast(MainIntent::class.java)
+        }
+
     }
 
+    private fun intentToAction(intent: MainIntent): MainAction {
+        return when (intent) {
+            is MainIntent.LoadPopularMovieIntent -> {
+                MainAction.LoadPopularMovieAction(intent.apiKey)
+            }
+        }
+    }
+
+    private val loadPopularProcess =
+        ObservableTransformer<MainAction.LoadPopularMovieAction, MainResult.GetPopularResult> { actions ->
+            actions.flatMap { action ->
+                useCase.execute(action.apiKey)
+                    .toObservable()
+                    .map { popular ->
+                        MainResult.GetPopularResult.Success(popular)
+                    }
+                    .cast(MainResult.GetPopularResult::class.java)
+                    .startWith(MainResult.GetPopularResult.IsLoading)
+                    .onErrorReturn(MainResult.GetPopularResult::Failed)
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+            }
+
+        }
+
+    private val actionProcessor = ObservableTransformer<MainAction, MainResult> { actions ->
+        actions.publish { actionObservable ->
+            Observable.merge(
+                listOf(
+                    actionObservable.ofType(MainAction.LoadPopularMovieAction::class.java).compose(
+                        loadPopularProcess
+                    )
+                )
+            )
+                .cast(MainResult::class.java)
+                .mergeWith(
+                    actionObservable.filter {
+                        it !is MainAction.LoadPopularMovieAction
+                    }.flatMap {
+                        Observable.error<MainResult>(Throwable("wrong intent"))
+                    }
+                )
+
+
+        }
+
+    }
+
+    private fun reducer(previousState: MainState, result: MainResult): MainState {
+        return when (result) {
+            is MainResult.GetPopularResult.IsLoading -> {
+                previousState.copy(isLoading = true)
+            }
+            is MainResult.GetPopularResult.Success -> {
+                previousState.copy(isLoading = false, movies = result.popular.results)
+            }
+            is MainResult.GetPopularResult.Failed -> {
+                previousState.copy(isLoading = false, isError = true)
+            }
+        }
+    }
+
+    private val stateObservable = publishSubject
+        .compose(intentFilter) // filter intent
+        .map(this::intentToAction) // intent to action
+        .compose(actionProcessor) // run process
+        .scan(MainState.default(), this::reducer) // reducer
+        .distinctUntilChanged() // reduce duplicate state
+        .replay(1) // maintain last one
+        .autoConnect(0) // enable to subscribe by all subscriber
+
     fun getState(): Observable<MainState> {
-        return state
+        return stateObservable
     }
 
     override fun onCleared() {
         super.onCleared()
         compositeDisposable.dispose()
+    }
+
+    fun processIntent(intentObservable: Observable<MainIntent>) {
+        intentObservable.subscribe(publishSubject)
     }
 }
 
@@ -67,5 +121,11 @@ data class MainState(
     val isRecentLoading: Boolean = false,
     val isRecentError: Boolean = false,
     val recent: List<Movie> = emptyList(),
-    val buttonRefreshEnabled : Boolean = false
-)
+    val buttonRefreshEnabled: Boolean = false
+) {
+    companion object {
+        fun default(): MainState {
+            return MainState()
+        }
+    }
+}

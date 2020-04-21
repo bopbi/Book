@@ -4,5 +4,5 @@ import com.quipper.book.model.Popular
 import io.reactivex.Single
 
 interface PopularRepository {
-    fun getPopular(): Single<Popular>
+    fun getPopular(apiKey: String): Single<Popular>
 }

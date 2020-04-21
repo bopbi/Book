@@ -7,8 +7,8 @@ import com.quipper.book.network.RetrofitClient
 import io.reactivex.Single
 
 class PopularRepositoryImpl(private val apiService: ApiService) : PopularRepository {
-    override fun getPopular(): Single<Popular> {
-        return apiService.getPopular(RetrofitClient.API_KEY)
+    override fun getPopular(apiKey: String): Single<Popular> {
+        return apiService.getPopular(apiKey)
             .doOnError {
                 Log.i(">>>>", "Error")
             }
