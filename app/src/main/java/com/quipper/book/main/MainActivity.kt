@@ -56,23 +56,43 @@ class MainActivity : AppCompatActivity() {
                 }
             )
 
+        viewModel.getViewEffect()
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(
+                {
+                    renderViewEffect(it)
+                },{
+                    Log.d(">>> ERROR", it.message)
+                }
+            )
+
         viewModel.processIntent(intentSubject)
         intentSubject.onNext(MainIntent.LoadPopularMovieIntent(RetrofitClient.API_KEY))
 
 
     }
 
+    private fun renderViewEffect(viewEffect: MainViewEffect) {
+        when(viewEffect) {
+            MainViewEffect.ShowToastError -> {
+                Toast.makeText(this, "Error", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
     private fun render(state: MainState) {
         if (state.isLoading && state.movies.isEmpty() && !state.isError) {
             Toast.makeText(this, "Loading", Toast.LENGTH_LONG).show()
         } else if (!state.isLoading && state.movies.isEmpty() && state.isError) {
-            Toast.makeText(this, "Error", Toast.LENGTH_LONG).show()
+            // ignored
         } else if (!state.isLoading && state.movies.isNotEmpty() && state.isError) {
             adapter.setItems(state.movies)
         } else if (state.isLoading && state.movies.isNotEmpty() && state.isError) {
             adapter.setItems(state.movies)
         } else if (!state.isLoading && state.movies.isNotEmpty() && !state.isError) {
             adapter.setItems(state.movies)
+            // intentSubject.onNext(MainIntent.LoadPopularMovieIntent)
         }
     }
 

@@ -14,6 +14,7 @@ import javax.inject.Inject
 class MainViewModel @Inject constructor(private val useCase: GetPopularUseCase) : ViewModel() {
 
     private val publishSubject: PublishSubject<MainIntent> = PublishSubject.create()
+    private val viewEffectSubject: PublishSubject<MainViewEffect> = PublishSubject.create()
     private val compositeDisposable = CompositeDisposable()
 
     // filter intent
@@ -24,6 +25,13 @@ class MainViewModel @Inject constructor(private val useCase: GetPopularUseCase) 
                     intents.ofType(MainIntent.LoadPopularMovieIntent::class.java).take(1)
                 )
             )
+//                .cast(MainIntent::class.java)
+//                .mergeWith(
+//                    intents.filter {
+//                        it is MainIntent.Logout
+//                    }
+//
+//                )
                 .cast(MainIntent::class.java)
         }
 
@@ -95,6 +103,7 @@ class MainViewModel @Inject constructor(private val useCase: GetPopularUseCase) 
         .compose(intentFilter) // filter intent
         .map(this::intentToAction) // intent to action
         .compose(actionProcessor) // run process
+        .doOnNext(this::handleEffect) // view effect if necessary
         .scan(MainState.default(), this::reducer) // reducer
         .distinctUntilChanged() // reduce duplicate state
         .replay(1) // maintain last one
@@ -104,6 +113,10 @@ class MainViewModel @Inject constructor(private val useCase: GetPopularUseCase) 
         return stateObservable
     }
 
+    fun getViewEffect(): Observable<MainViewEffect> {
+        return viewEffectSubject
+    }
+
     override fun onCleared() {
         super.onCleared()
         compositeDisposable.dispose()
@@ -111,6 +124,12 @@ class MainViewModel @Inject constructor(private val useCase: GetPopularUseCase) 
 
     fun processIntent(intentObservable: Observable<MainIntent>) {
         intentObservable.subscribe(publishSubject)
+    }
+
+    private fun handleEffect(result: MainResult) {
+        if (result is MainResult.GetPopularResult.Failed) {
+            viewEffectSubject.onNext(MainViewEffect.ShowToastError)
+        }
     }
 }
 
