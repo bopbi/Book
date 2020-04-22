@@ -10,8 +10,8 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.quipper.book.R
 import com.quipper.book.di.DaggerMovieComponent
+import com.quipper.book.di.MovieModul
 import com.quipper.book.network.RetrofitClient
-import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.PublishSubject
@@ -31,7 +31,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        DaggerMovieComponent.builder().build().inject(this)
+        DaggerMovieComponent.builder().movieModul(
+            MovieModul(this)
+        ).build().inject(this)
 
         setContentView(R.layout.activity_main)
         viewModel = ViewModelProviders.of(this, viewModelFactory)[MainViewModel::class.java]
@@ -69,7 +71,7 @@ class MainActivity : AppCompatActivity() {
 
         viewModel.processIntent(intentSubject)
         intentSubject.onNext(MainIntent.LoadPopularMovieIntent(RetrofitClient.API_KEY))
-
+        intentSubject.onNext(MainIntent.LoadLocalPopularMovieIntent)
 
     }
 

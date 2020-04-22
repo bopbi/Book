@@ -1,34 +1,43 @@
 package com.quipper.book.di
 
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
+import android.content.Context
+import android.content.SharedPreferences
 import com.quipper.book.domain.GetPopularUseCase
 import com.quipper.book.domain.GetPopularUseCaseImpl
+import com.quipper.book.domain.LoadLocalPopular
+import com.quipper.book.domain.LoadLocalPopularImpl
 import com.quipper.book.network.ApiService
 import com.quipper.book.network.RetrofitClient
 import com.quipper.book.repository.PopularRepository
 import com.quipper.book.repository.PopularRepositoryImpl
-import dagger.MapKey
 import dagger.Module
 import dagger.Provides
-import javax.inject.Inject
-import javax.inject.Provider
-import javax.inject.Singleton
-import kotlin.reflect.KClass
 
 @Module
-class MovieModul{
+class MovieModul(private val context: Context) {
+
     @Provides
-    fun provideApiService(): ApiService{
-        return RetrofitClient.apiService
-    }
-    @Provides
-    fun providePopularRepository(apiService: ApiService): PopularRepository{
-        return PopularRepositoryImpl(apiService)
+    fun provideSharedPreference() : SharedPreferences {
+        return context.getSharedPreferences("", Context.MODE_PRIVATE)
     }
 
     @Provides
-    fun provideGetPopularUseCase(popularRepository: PopularRepository): GetPopularUseCase{
+    fun provideApiService(): ApiService {
+        return RetrofitClient.apiService
+    }
+
+    @Provides
+    fun providePopularRepository(apiService: ApiService, sharedPreferences: SharedPreferences): PopularRepository {
+        return PopularRepositoryImpl(apiService, sharedPreferences)
+    }
+
+    @Provides
+    fun provideGetPopularUseCase(popularRepository: PopularRepository): GetPopularUseCase {
         return GetPopularUseCaseImpl(popularRepository)
+    }
+
+    @Provides
+    fun provideLoadLocalPopular(popularRepository: PopularRepository): LoadLocalPopular {
+        return LoadLocalPopularImpl(popularRepository)
     }
 }
