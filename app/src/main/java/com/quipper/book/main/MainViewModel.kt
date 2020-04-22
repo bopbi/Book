@@ -79,8 +79,6 @@ class MainViewModel @Inject constructor(private val useCase: GetPopularUseCase) 
                         Observable.error<MainResult>(Throwable("wrong intent"))
                     }
                 )
-
-
         }
 
     }

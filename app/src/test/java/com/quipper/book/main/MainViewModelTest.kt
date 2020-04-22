@@ -56,4 +56,30 @@ class MainViewModelTest {
             !state.isLoading && !state.isError && state.movies.isNotEmpty()
         }
     }
+
+    @Test
+    fun `LoadPopularMovieIntent should call getPopularUseCase and emit error and vieweffect showtoast when usecase emit error`() {
+        val expectedKey = RandomString.make(2)
+        val expectedError = Throwable("ERROR")
+
+        val testObserver = mainViewModel.getState().test()
+        val testViewEffectObserver = mainViewModel.getViewEffect().test()
+
+        whenever(mockedGetPopularUseCase.execute(any()))
+            .thenReturn(Single.error(expectedError))
+
+        mainViewModel.processIntent(Observable.just(MainIntent.LoadPopularMovieIntent(expectedKey)))
+
+        testObserver.assertValueAt(1) { state ->
+            state.isLoading && !state.isError && state.movies.isEmpty()
+        }
+
+        testViewEffectObserver.assertValueAt(0) { effect ->
+            effect == MainViewEffect.ShowToastError
+        }
+
+        testObserver.assertValueAt(2) { state ->
+            !state.isLoading && state.isError && state.movies.isEmpty()
+        }
+    }
 }
